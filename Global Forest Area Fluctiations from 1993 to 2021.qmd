@@ -3,15 +3,26 @@ title: "Global Forest Area Fluctiations from 1993 to 2021"
 format:
   html:
     code-fold: true
+    execute:
+        echo: true
 jupyter: python3
 ---
 
-This database has been collected from the Data Worldbank <i>(https://data.worldbank.org/topic/environment)<i> to extract and visualize forest area (% of land area) data.
+## Introduction
+The dataset used in this report was collected on the 25th of January 2024 from [The Data Worldbank](https://data.worldbank.org/topic/environment). The data falls under the [License CC-BY 4.0](https://datacatalog.worldbank.org/public-licenses), which allows public use.
 
-License CC-BY 4.0:
+Being interested in the environmental state of the world, I wanted to know what is happening to our forests. As we likely all know, global warming is threatening our world, and to make an impact on reversing and preserving our planet, I think it's important that people can visualize the impact of our actions, rather than hear about this. That is the goal of this project. 
+
+To do this I've asked the following questions:
+
+1. Which 5 countries have suffered the highest loss in forest area?
+2. Which countries have not lost any forest over time?
+3. Are there countries that have increased in forest area during this time?
+4. Per year, is there a loss, neutrality, or increase in forest area globally?
 
 
- ### Load Database and Libraries
+### Create an in-memory database and import libraries.
+<i>Locate dataset and import libraries.<i>
 ```{python}
 database_loc = R"C:\Users\ERMCl\Documents\FreelanceWork\Portfolio\Forest_Area_Internationally_2024.0125\API_6_DS2_en_csv_v2_6303688.csv"
 
@@ -19,20 +30,42 @@ database_loc = R"C:\Users\ERMCl\Documents\FreelanceWork\Portfolio\Forest_Area_In
 import duckdb
 connection = duckdb.connect(database=':memory:')
 import pandas as pd
-import geopandas as gpd
+import geopandas as gpdP
 
 import plotly.graph_objects as go
 import plotly.express as px
 
 
 create_table_total_total_total_total_total_total_query = """
-DROP TABLE ForestDB;
+DROP TABLE ForestDB;P
 """
 
 ```
 
+<i>Copy paste code output to help create the database.<i>
+```{python code_hide='true'}
 
-### Create a Temporary Database
+# x = 1993
+# while x < 2023:
+#     print(f"CONCAT(y{x}, '%') AS y{x},"),
+#     x += 1
+# print("done")
+
+
+# while x < 2023:
+#     print(f"y{x} INT64,"),
+#     x += 1
+# print("done")
+
+
+# while x < 2023:
+#     print(f"y{x} = CONCAT(y{x}, '%'),"),
+#     x += 1
+# print("done")
+
+```
+
+<i>Create in-memory database from the dataset to allow faster data proccessing.<i>
 ```{python}
 #| fig-cap: Complete Environmental Data From data.worldbank.org
 
@@ -186,13 +219,16 @@ FROM
 connection.execute(load_data_query)
 
 
-database = connection.execute("SELECT* FROM ForestDB LIMIT 1").df()
-database
+database = connection.execute("SELECT* FROM ForestDB").df()
 ```
 
 
 
-## Question 1: Which country has lost the most Area of Forest from 1993 to 2021?
+
+
+
+## Query 1. Which 5 countries have suffered the highest loss in forest area?
+Run a query to calculate the change in forest area and order the results in ascending order.
 ```{python}
 query = """
 SELECT 
@@ -234,18 +270,18 @@ ORDER BY (y2021 - y1993) ASC
 LIMIT 5;
 """
 table = connection.execute(query).df()
-table
 ```
 
-Reorganize previous table
-.melt splits several columns into just two: 1) the variable and 2) value
+
+Reorganize the table and limit output to 5 rows.
 ```{python}
 table_melted = table.melt(id_vars=['Country Name', 'Indicator Name', 'Total % Forest Area Gained or Lost (1993-2021)'], var_name='Year', value_name='% Forest Area')
 table_melted['Year'] = table_melted['Year'].str.extract('(\d+)', expand=False).astype(int)
-table_melted
+
+table_melted.tail(5)
 ```
 
-Create a linear graph to visualize the 5 countries that have lost the most forest area from 1993 to 2021
+Visualization of the reorganized table.
 ```{python}
 # Create the plot
 fig = px.line(table_melted, 
@@ -253,7 +289,6 @@ fig = px.line(table_melted,
               y='% Forest Area', 
               color='Country Name',
               line_shape='linear',
-              width=1000, height=600,
               hover_name="Country Name",
               custom_data=['Total % Forest Area Gained or Lost (1993-2021)']
                 )
@@ -299,26 +334,31 @@ fig.update_traces(hoverlabel=dict(font=dict(color='white'), bgcolor='rgb(128,0,0
 
 fig.update_xaxes(showgrid=False, range=[1993, 2021])
 fig.update_yaxes(showgrid=False, range=[0, 100])
-fig.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Loss of Forest Area From 1993 to 2021<b>', font=dict(size=20)),
+fig.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Loss of Forest Area From 1993 to 2021<b>', font=dict(size=18)),
                   paper_bgcolor='rgb(17,17,17)', plot_bgcolor='rgb(17,17,17)', font=dict(color='white'))
 
+fig.update_layout(
+    width=790,
+    height=500,
+    margin=dict(
+        l=100,
+        r=100,
+        b=100,
+        t=100))
 
 #Call for graph
 fig.show()
 ```
 
-Add Animation to the graph
-```{python}
-import plotly.express as px
-import plotly.graph_objects as go
+Visualization with added animated time-line.
 
+```{python}
 # Static Graph
 fig = px.line(table_melted, 
               x='Year', 
               y='% Forest Area', 
               color='Country Name',
               line_shape='linear',
-              width=1000, height=600,
               hover_name="Country Name",
               custom_data=['Total % Forest Area Gained or Lost (1993-2021)']
               )
@@ -347,8 +387,17 @@ fig.update_traces(selector={'name': highest_loss_country}, line=dict(color='red'
 fig.update_traces(hoverlabel=dict(font=dict(color='white'), bgcolor='rgb(128,0,0)'), selector={'name': highest_loss_country})
 fig.update_xaxes(showgrid=False, range=[1993, 2021])
 fig.update_yaxes(showgrid=False, range=[0, 100])
-fig.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Loss of Forest Area From 1993 to 2021<b>', font=dict(size=20)),
+fig.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Loss of Forest Area From 1993 to 2021<b>', font=dict(size=18)),
                   paper_bgcolor='rgb(17,17,17)', plot_bgcolor='rgb(17,17,17)', font=dict(color='white'))
+fig.update_layout(
+    width=790,
+    height=500,
+    margin=dict(
+        l=100,
+        r=100,
+        b=100,
+        t=100))
+
 
 # Add frames for animation
 frames = []
@@ -408,116 +457,20 @@ fig.update_layout(
 
 # Show the plot
 fig.show()
-
 ```
 
-Create Full Table In Order to Create a WorldMap
+
+
+
+## Query 2. Which countries have not lost any forest over time?
+
+
 ```{python}
-#Create database with only Indicator_Name ='Forest area (% of land area)'
 
-query2 = """
-SELECT 
-    DISTINCT Country_Name AS 'Country Name',
-    Indicator_Name AS 'Indicator Name',
-    y1993,
-    y1994,
-    y1995,
-    y1996,
-    y1997,
-    y1998,
-    y1999,
-    y2000,
-    y2001,
-    y2002,
-    y2003,
-    y2004,
-    y2005,
-    y2006,
-    y2007,
-    y2008,
-    y2009,
-    y2010,
-    y2011,
-    y2012,
-    y2013,
-    y2014,
-    y2015,
-    y2016,
-    y2017,
-    y2018,
-    y2019,
-    y2020,
-    y2021,
-    (y2021 - y1993) AS 'Total % Forest Area Gained or Lost (1993-2021)'
-FROM ForestDB
-WHERE Indicator_Name ='Forest area (% of land area)'
-ORDER BY (y2021 - y1993) DESC
-"""
-FullTable = connection.execute(query2).df()
-#FullTable
-
-
-table_melted2 = FullTable.melt(id_vars=['Country Name', 'Indicator Name', 'Total % Forest Area Gained or Lost (1993-2021)'], var_name='Year', value_name='% Forest Area')
-table_melted2['Year'] = table_melted2['Year'].str.extract('(\d+)', expand=False).astype(int)
-table_melted2
 
 ```
 
-Global Forest Area % Throughout 1993-2021
-```{python}
-# Load world map GeoJSON file
-world_map = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
-
-# Update the country names to match the one in world_map
-table_melted2.loc[table_melted2['Country Name'] == 'United States', 'Country Name'] = 'United States of America'
-table_melted2.loc[table_melted2['Country Name'] == 'Congo, Rep.', 'Country Name'] = 'Congo'
-table_melted2.loc[table_melted2['Country Name'] == 'Congo, Dem. Rep.', 'Country Name'] = 'Dem. Rep. Congo'
-table_melted2.loc[table_melted2['Country Name'] == 'Egypt, Arab Rep.', 'Country Name'] = 'Egypt'
-table_melted2.loc[table_melted2['Country Name'] == 'Yemen, Rep.', 'Country Name'] = 'Yemen'
-table_melted2.loc[table_melted2['Country Name'] == 'South Sudan', 'Country Name'] = 'S. Sudan'
-table_melted2.loc[table_melted2['Country Name'] == 'Russian Federation', 'Country Name'] = 'Russia'
-table_melted2.loc[table_melted2['Country Name'] == 'Venezuela, RB', 'Country Name'] = 'Venezuela'
-table_melted2.loc[table_melted2['Country Name'] == 'Central African Republic', 'Country Name'] = 'Central African Rep.'
-table_melted2.loc[table_melted2['Country Name'] == 'Dominican Republic', 'Country Name'] = 'Dominican Rep.'
-table_melted2.loc[table_melted2['Country Name'] == 'Bahamas, The', 'Country Name'] = 'Bahamas'
-table_melted2.loc[table_melted2['Country Name'] == "Cote d'Ivoire", 'Country Name'] = "Côte d'Ivoire"
-table_melted2.loc[table_melted2['Country Name'] == 'Iran, Islamic Rep.', 'Country Name'] = 'Iran'
-table_melted2.loc[table_melted2['Country Name'] == 'Syrian Arab Republic', 'Country Name'] = 'Syria'
-table_melted2.loc[table_melted2['Country Name'] == 'Turkiye', 'Country Name'] = 'Turkey'
-table_melted2.loc[table_melted2['Country Name'] == 'Viet Nam', 'Country Name'] = 'Vietnam'
-table_melted2.loc[table_melted2['Country Name'] == 'Lao PDR', 'Country Name'] = 'Laos'
-table_melted2.loc[table_melted2['Country Name'] == "Korea, Dem. People's Rep.", 'Country Name'] = 'North Korea'
-table_melted2.loc[table_melted2['Country Name'] == 'Korea, Rep.', 'Country Name'] = 'South Korea'
-table_melted2.loc[table_melted2['Country Name'] == 'Solomon Islands', 'Country Name'] = 'Solomon Is.'
-table_melted2.loc[table_melted2['Country Name'] == 'S. Sudan', 'Country Name'] = 'S. Sudan'
-#Missing Countries: S.Sudan and Côte d'Ivoire (present, but cannot add), Taiwan, Falkland Is., Antartica not in the table.
 
 
-
-# Assuming df is your DataFrame containing the forest area data
-merged_data = world_map.merge(table_melted2, left_on='name', right_on='Country Name', how='left')
-
-fig = px.choropleth(merged_data, 
-                    geojson=merged_data.geometry, 
-                    locations=merged_data.index, 
-                    color='Total % Forest Area Gained or Lost (1993-2021)',
-                    hover_name='name',
-                    hover_data=['Total % Forest Area Gained or Lost (1993-2021)'],
-                    color_continuous_scale='Inferno', #Inferno, Hot or Blackbody
-                    projection='natural earth')
-
-fig.update_geos(showcountries=True, countrycolor="lightgray", showcoastlines=True, coastlinecolor="white")
-
-fig.update_layout(title='<b>Total % Forest Area Lost (1993 - 2021) per Documented Country <b>',
-                  title_x=.5,
-                  coloraxis_colorbar=dict(title='Total % Forest Area Gained or Lost (1993-2021)'))
-
-
-hover_template = "<b>%{hovertext}</b><br>" + \
-                 "Total % Area Loss/Gain: %{customdata}%<br>" + \
-                 "<extra></extra>"
-
-fig.update_traces(hovertemplate=hover_template)
-fig.show()
-
-```
+3. Are there countries that have increased in forest area during this time?
+4. Per year, is there a loss, neutrality, or increase in forest area globally?
