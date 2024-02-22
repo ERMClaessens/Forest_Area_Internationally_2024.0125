@@ -17,8 +17,7 @@ To do this I've asked the following questions:
 
 1. Which 5 countries have suffered the highest loss in forest area?
 2. Which countries have gained the most forest area over time?
-3. Are there countries that have increased in forest area during this time?
-4. Per year, is there a loss, neutrality, or increase in forest area globally?
+3. Per year, is there a loss, neutrality, or increase in forest area globally?
 
 
 ### Create an in-memory database and import libraries.
@@ -223,10 +222,6 @@ database = connection.execute("SELECT* FROM ForestDB").df()
 ```
 
 
-
-
-
-
 ## Query 1. Which 5 countries have suffered the highest loss in forest area?
 Run a query to calculate the change in forest area and order the results in ascending order. Limit output to first 5 rows.
 ```{python}
@@ -263,7 +258,7 @@ SELECT
     y2019,
     y2020,
     y2021,
-    (y2021 - y1993) AS 'Total % Forest Area Gained or Lost (1993-2021)'
+    (y2021 - y1993) AS '% Change in Forest Area (1993-2021)'
 FROM ForestDB
 WHERE Indicator_Name ='Forest area (% of land area)'
 ORDER BY (y2021 - y1993) ASC
@@ -275,14 +270,14 @@ table = connection.execute(query).df()
 
 Reorganize the table.
 ```{python}
-table_melted = table.melt(id_vars=['Country Name', 'Indicator Name', 'Total % Forest Area Gained or Lost (1993-2021)'], var_name='Year', value_name='% Forest Area')
+table_melted = table.melt(id_vars=['Country Name', 'Indicator Name', '% Change in Forest Area (1993-2021)'], var_name='Year', value_name='% Forest Area')
 table_melted['Year'] = table_melted['Year'].str.extract('(\d+)', expand=False).astype(int)
 
 table_melted.tail(5)
 ```
 
 
-Visualization of the reorganized table.
+Visualization of the table.
 ```{python}
 # Create the plot
 fig = px.line(table_melted, 
@@ -291,7 +286,7 @@ fig = px.line(table_melted,
               color='Country Name',
               line_shape='linear',
               hover_name="Country Name",
-              custom_data=['Total % Forest Area Gained or Lost (1993-2021)']
+              custom_data=['% Change in Forest Area (1993-2021)']
                 )
 
 
@@ -299,8 +294,8 @@ fig = px.line(table_melted,
 fig.update_traces(line=dict(color='lightgray'))
 
 
-# Define Country with the highest total loss of Forest Area from 1993 to 2021
-highest_loss_country = table_melted.loc[table_melted['Total % Forest Area Gained or Lost (1993-2021)'].idxmin()]['Country Name']
+# Define Country with the highest total Change of Forest Area from 1993 to 2021
+highest_loss_country = table_melted.loc[table_melted['% Change in Forest Area (1993-2021)'].idxmin()]['Country Name']
 
 
 # Add annotations to the country with the highest Forest loss
@@ -311,7 +306,7 @@ fig.add_annotation(x=name_data['Year'], y=name_data['% Forest Area'],
 
 loss_data_point = table_melted[(table_melted['Country Name'] == highest_loss_country) & (table_melted['Year'] == table_melted['Year'].max())]
 fig.add_annotation(x=loss_data_point['Year'].values[0], y=loss_data_point['% Forest Area'].values[0],
-                   text=f"<b>Total % Lost: {loss_data_point['Total % Forest Area Gained or Lost (1993-2021)'].values[0]}%<b>",
+                   text=f"<b>Total % Change: {loss_data_point['% Change in Forest Area (1993-2021)'].values[0]}%<b>",
                    showarrow=False, yshift=25, font=dict(color='white'))
 
 
@@ -319,7 +314,7 @@ fig.add_annotation(x=loss_data_point['Year'].values[0], y=loss_data_point['% For
 hover_template = "<b>%{hovertext}</b><br>" \
                  "Year: %{x}<br>" \
                  "Forest Area: %{y}% <br>" \
-                 "<i>Total Area Loss: %{customdata}% <i><extra></extra>"
+                 "<i>Total Area Change: %{customdata}% <i><extra></extra>"
 #                 "&nbsp;<br>" \ -> for added enter
 fig.update_traces(hovertemplate=hover_template)
 
@@ -354,11 +349,11 @@ fig = px.line(table_melted,
               color='Country Name',
               line_shape='linear',
               hover_name="Country Name",
-              custom_data=['Total % Forest Area Gained or Lost (1993-2021)']
+              custom_data=['% Change in Forest Area (1993-2021)']
               )
 fig.update_traces(line=dict(color='lightgray'))
 
-highest_loss_country = table_melted.loc[table_melted['Total % Forest Area Gained or Lost (1993-2021)'].idxmin()]['Country Name']
+highest_loss_country = table_melted.loc[table_melted['% Change in Forest Area (1993-2021)'].idxmin()]['Country Name']
 
 name_data = table_melted[table_melted['Country Name'] == highest_loss_country].iloc[10]
 fig.add_annotation(x=name_data['Year'], y=name_data['% Forest Area'],
@@ -367,13 +362,13 @@ fig.add_annotation(x=name_data['Year'], y=name_data['% Forest Area'],
 
 loss_data_point = table_melted[(table_melted['Country Name'] == highest_loss_country) & (table_melted['Year'] == table_melted['Year'].max())]
 fig.add_annotation(x=loss_data_point['Year'].values[0], y=loss_data_point['% Forest Area'].values[0],
-                   text=f"<b>Total % Lost: {loss_data_point['Total % Forest Area Gained or Lost (1993-2021)'].values[0]}%<b>",
+                   text=f"<b>Total % Change: {loss_data_point['% Change in Forest Area (1993-2021)'].values[0]}%<b>",
                    showarrow=False, yshift=25, font=dict(color='white'))
 
 hover_template = "<b>%{hovertext}</b><br>" \
                  "Year: %{x}<br>" \
                  "Forest Area: %{y}% <br>" \
-                 "<i>Total Area Loss: %{customdata}% <i><extra></extra>"
+                 "<i>Total Area Change: %{customdata}% <i><extra></extra>"
 fig.update_traces(hovertemplate=hover_template)
 
 fig.update_traces(hoverlabel=dict(font=dict(color='black'), bgcolor='lightgray'))
@@ -489,20 +484,271 @@ SELECT
     y2019,
     y2020,
     y2021,
-    (y2021 - y1993) AS 'Total % Forest Area Gained or Lost (1993-2021)'
+    (y2021 - y1993) AS '% Change in Forest Area (1993-2021)'
 FROM ForestDB
 WHERE Indicator_Name ='Forest area (% of land area)'
 ORDER BY (y2021 - y1993) DESC
+LIMIT 5;
 """
-FullTable = connection.execute(query2).df()
+Table2 = connection.execute(query2).df()
 ```
 
 
 Reorganize the table.
 ```{python}
-table_melted2 = FullTable.melt(id_vars=['Country Name', 'Indicator Name', 'Total % Forest Area Gained or Lost (1993-2021)'], var_name='Year', value_name='% Forest Area')
+table_melted2 = Table2.melt(id_vars=['Country Name', 'Indicator Name', '% Change in Forest Area (1993-2021)'], var_name='Year', value_name='% Forest Area')
 table_melted2['Year'] = table_melted2['Year'].str.extract('(\d+)', expand=False).astype(int)
 table_melted2
+
+```
+
+
+Visualization
+```{python}
+# Create the plot
+fig2 = px.line(table_melted2, 
+              x='Year', 
+              y='% Forest Area', 
+              color='Country Name',
+              line_shape='linear',
+              hover_name="Country Name",
+              custom_data=['% Change in Forest Area (1993-2021)']
+                )
+
+
+# Gray out all lines
+fig2.update_traces(line=dict(color='lightgray'))
+
+
+# Define Country with the highest total gain of Forest Area from 1993 to 2021
+highest_gain_country = table_melted2.loc[table_melted2['% Change in Forest Area (1993-2021)'].idxmax()]['Country Name']
+
+
+# Add annotations to the country with the highest Forest gain
+name_data = table_melted2[table_melted2['Country Name'] == highest_gain_country].iloc[10]
+fig2.add_annotation(x=name_data['Year'], y=name_data['% Forest Area'],
+                   text=f"<b>{highest_gain_country}<b>",
+                   showarrow=False, yshift=20, font=dict(color='white'))
+
+gain_data_point = table_melted2[(table_melted2['Country Name'] == highest_gain_country) & (table_melted2['Year'] == table_melted2['Year'].max())]
+fig2.add_annotation(x=gain_data_point['Year'].values[0], y=gain_data_point['% Forest Area'].values[0],
+                   text=f"<b>Total % Change: {gain_data_point['% Change in Forest Area (1993-2021)'].values[0]}%<b>",
+                   showarrow=False, yshift=25, font=dict(color='white'))
+
+
+# Edit hover ---> Research how to edit hover!!! current hover is not correct
+hover_template = "<b>%{hovertext}</b><br>" \
+                 "Year: %{x}<br>" \
+                 "Forest Area: %{y}% <br>" \
+                 "<i>Total Area Change: %{customdata}% <i><extra></extra>"
+#                 "&nbsp;<br>" \ -> for added enter
+fig2.update_traces(hovertemplate=hover_template)
+
+
+
+# Edit Layout of Graph
+fig2.update_traces(hoverlabel=dict(font=dict(color='black'), bgcolor='lightgray')) #hoverdata
+
+fig2.update_traces(selector={'name': highest_gain_country}, line=dict(color='green'))  #selector hover data
+#fig2.update_traces(hoverlabel=dict(font=dict(color='rgb(102,0,0)')), selector={'name': highest_gain_country})
+fig2.update_traces(hoverlabel=dict(font=dict(color='white'), bgcolor='rgb(0,153,0)'), selector={'name': highest_gain_country})
+
+
+fig2.update_xaxes(showgrid=False, range=[1993, 2021])
+fig2.update_yaxes(showgrid=False, range=[0, 100])
+fig2.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Increase of Forest Area From 1993 to 2021<b>', font=dict(size=18)),
+                  paper_bgcolor='rgb(17,17,17)', plot_bgcolor='rgb(17,17,17)', font=dict(color='white'))
+
+fig2.update_layout(width=790, height=500, margin=dict(l=100, r=100, b=100, t=100))
+
+#Call for graph
+fig2.show()
+```
+
+
+The most Forest Area lost by a country from 1993 to 2021 is 24%, while the most gained by a country is 18%. This observation 
+
+
+
+## Query 3. Per year, is there a loss, neutrality, or increase in forest area globally?
+Run query for full table.
+```{python}
+#Create database with only Indicator_Name ='Forest area (% of land area)'
+
+query3 = """
+SELECT 
+    DISTINCT Country_Name AS 'Country Name',
+    Indicator_Name AS 'Indicator Name',
+    y1993,
+    y1994,
+    y1995,
+    y1996,
+    y1997,
+    y1998,
+    y1999,
+    y2000,
+    y2001,
+    y2002,
+    y2003,
+    y2004,
+    y2005,
+    y2006,
+    y2007,
+    y2008,
+    y2009,
+    y2010,
+    y2011,
+    y2012,
+    y2013,
+    y2014,
+    y2015,
+    y2016,
+    y2017,
+    y2018,
+    y2019,
+    y2020,
+    y2021,
+    (y2021 - y1993) AS '% Change in Forest Area (1993-2021)'
+FROM ForestDB
+WHERE Indicator_Name ='Forest area (% of land area)'
+ORDER BY (y2021 - y1993) DESC;
+"""
+FullTable = connection.execute(query3).df()
+```
+!tomorrow add combine all years -> forest area. to see global area over years
+
+Reorganize the table.
+```{python}
+table_melted_full = FullTable.melt(id_vars=['Country Name', 'Indicator Name', '% Change in Forest Area (1993-2021)'], var_name='Year', value_name='% Forest Area')
+table_melted_full['Year'] = table_melted_full['Year'].str.extract('(\d+)', expand=False).astype(int)
+table_melted_full
+
+```
+
+
+Visualization
+```{python}
+# Create the plot
+fig3 = px.line(table_melted_full, 
+              x='Year', 
+              y='% Forest Area', 
+              color='Country Name',
+              line_shape='linear',
+              hover_name="Country Name",
+              custom_data=['% Change in Forest Area (1993-2021)']
+                )
+
+
+# Gray out all lines
+fig3.update_traces(line=dict(color='lightgray'))
+
+
+# Define Country with the highest total gain of Forest Area from 1993 to 2021
+highest_gain_country = table_melted_full.loc[table_melted_full['% Change in Forest Area (1993-2021)'].idxmax()]['Country Name']
+
+
+# Add annotations to the country with the highest Forest gain
+name_data = table_melted_full[table_melted_full['Country Name'] == highest_gain_country].iloc[10]
+fig3.add_annotation(x=name_data['Year'], y=name_data['% Forest Area'],
+                   text=f"<b>{highest_gain_country}<b>",
+                   showarrow=False, yshift=20, font=dict(color='white'))
+
+gain_data_point = table_melted_full[(table_melted_full['Country Name'] == highest_gain_country) & (table_melted_full['Year'] == table_melted_full['Year'].max())]
+fig3.add_annotation(x=gain_data_point['Year'].values[0], y=gain_data_point['% Forest Area'].values[0],
+                   text=f"<b>Total % Change: {gain_data_point['% Change in Forest Area (1993-2021)'].values[0]}%<b>",
+                   showarrow=False, yshift=25, font=dict(color='white'))
+
+
+# Edit hover ---> Research how to edit hover!!! current hover is not correct
+hover_template = "<b>%{hovertext}</b><br>" \
+                 "Year: %{x}<br>" \
+                 "Forest Area: %{y}% <br>" \
+                 "<i>Total Area Change: %{customdata}% <i><extra></extra>"
+#                 "&nbsp;<br>" \ -> for added enter
+fig3.update_traces(hovertemplate=hover_template)
+
+
+
+# Edit Layout of Graph
+fig3.update_traces(hoverlabel=dict(font=dict(color='black'), bgcolor='lightgray')) #hoverdata
+
+fig3.update_traces(selector={'name': highest_gain_country}, line=dict(color='green'))  #selector hover data
+#fig3.update_traces(hoverlabel=dict(font=dict(color='rgb(102,0,0)')), selector={'name': highest_gain_country})
+fig3.update_traces(hoverlabel=dict(font=dict(color='white'), bgcolor='rgb(0,153,0)'), selector={'name': highest_gain_country})
+
+
+fig3.update_xaxes(showgrid=False, range=[1993, 2021])
+fig3.update_yaxes(showgrid=False, range=[0, 100])
+fig3.update_layout(showlegend=False, title_x=0.5, title=dict(text='<b>The Country With The Highest Increase of Forest Area From 1993 to 2021<b>', font=dict(size=18)),
+                  paper_bgcolor='rgb(17,17,17)', plot_bgcolor='rgb(17,17,17)', font=dict(color='white'))
+
+fig3.update_layout(width=790, height=500, margin=dict(l=100, r=100, b=100, t=100))
+
+#Call for graph
+fig3.show()
+```
+
+
+
+
+
+
+
+
+
+
+## Display entire map 
+Run query for full table.
+```{python}
+#Create database with only Indicator_Name ='Forest area (% of land area)'
+
+query3 = """
+SELECT 
+    DISTINCT Country_Name AS 'Country Name',
+    Indicator_Name AS 'Indicator Name',
+    y1993,
+    y1994,
+    y1995,
+    y1996,
+    y1997,
+    y1998,
+    y1999,
+    y2000,
+    y2001,
+    y2002,
+    y2003,
+    y2004,
+    y2005,
+    y2006,
+    y2007,
+    y2008,
+    y2009,
+    y2010,
+    y2011,
+    y2012,
+    y2013,
+    y2014,
+    y2015,
+    y2016,
+    y2017,
+    y2018,
+    y2019,
+    y2020,
+    y2021,
+    (y2021 - y1993) AS '% Change in Forest Area (1993-2021)'
+FROM ForestDB
+WHERE Indicator_Name ='Forest area (% of land area)'
+ORDER BY (y2021 - y1993) DESC;
+"""
+FullTable = connection.execute(query3).df()
+```
+
+
+Reorganize the table.
+```{python}
+table_melted_full = FullTable.melt(id_vars=['Country Name', 'Indicator Name', '% Change in Forest Area (1993-2021)'], var_name='Year', value_name='% Forest Area')
+table_melted_full['Year'] = table_melted_full['Year'].str.extract('(\d+)', expand=False).astype(int)
+table_melted_full
 
 ```
 
@@ -515,40 +761,40 @@ world_map = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres')) #evertua
 
 
 # Update the country names to match the one in world_map
-table_melted2.loc[table_melted2['Country Name'] == 'United States', 'Country Name'] = 'United States of America'
-table_melted2.loc[table_melted2['Country Name'] == 'Congo, Rep.', 'Country Name'] = 'Congo'
-table_melted2.loc[table_melted2['Country Name'] == 'Congo, Dem. Rep.', 'Country Name'] = 'Dem. Rep. Congo'
-table_melted2.loc[table_melted2['Country Name'] == 'Egypt, Arab Rep.', 'Country Name'] = 'Egypt'
-table_melted2.loc[table_melted2['Country Name'] == 'Yemen, Rep.', 'Country Name'] = 'Yemen'
-table_melted2.loc[table_melted2['Country Name'] == 'South Sudan', 'Country Name'] = 'S. Sudan'
-table_melted2.loc[table_melted2['Country Name'] == 'Russian Federation', 'Country Name'] = 'Russia'
-table_melted2.loc[table_melted2['Country Name'] == 'Venezuela, RB', 'Country Name'] = 'Venezuela'
-table_melted2.loc[table_melted2['Country Name'] == 'Central African Republic', 'Country Name'] = 'Central African Rep.'
-table_melted2.loc[table_melted2['Country Name'] == 'Dominican Republic', 'Country Name'] = 'Dominican Rep.'
-table_melted2.loc[table_melted2['Country Name'] == 'Bahamas, The', 'Country Name'] = 'Bahamas'
-table_melted2.loc[table_melted2['Country Name'] == "Cote d'Ivoire", 'Country Name'] = "Côte d'Ivoire"
-table_melted2.loc[table_melted2['Country Name'] == 'Iran, Islamic Rep.', 'Country Name'] = 'Iran'
-table_melted2.loc[table_melted2['Country Name'] == 'Syrian Arab Republic', 'Country Name'] = 'Syria'
-table_melted2.loc[table_melted2['Country Name'] == 'Turkiye', 'Country Name'] = 'Turkey'
-table_melted2.loc[table_melted2['Country Name'] == 'Viet Nam', 'Country Name'] = 'Vietnam'
-table_melted2.loc[table_melted2['Country Name'] == 'Lao PDR', 'Country Name'] = 'Laos'
-table_melted2.loc[table_melted2['Country Name'] == "Korea, Dem. People's Rep.", 'Country Name'] = 'North Korea'
-table_melted2.loc[table_melted2['Country Name'] == 'Korea, Rep.', 'Country Name'] = 'South Korea'
-table_melted2.loc[table_melted2['Country Name'] == 'Solomon Islands', 'Country Name'] = 'Solomon Is.'
-table_melted2.loc[table_melted2['Country Name'] == 'S. Sudan', 'Country Name'] = 'S. Sudan'
+table_melted_full.loc[table_melted_full['Country Name'] == 'United States', 'Country Name'] = 'United States of America'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Congo, Rep.', 'Country Name'] = 'Congo'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Congo, Dem. Rep.', 'Country Name'] = 'Dem. Rep. Congo'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Egypt, Arab Rep.', 'Country Name'] = 'Egypt'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Yemen, Rep.', 'Country Name'] = 'Yemen'
+table_melted_full.loc[table_melted_full['Country Name'] == 'South Sudan', 'Country Name'] = 'S. Sudan'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Russian Federation', 'Country Name'] = 'Russia'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Venezuela, RB', 'Country Name'] = 'Venezuela'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Central African Republic', 'Country Name'] = 'Central African Rep.'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Dominican Republic', 'Country Name'] = 'Dominican Rep.'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Bahamas, The', 'Country Name'] = 'Bahamas'
+table_melted_full.loc[table_melted_full['Country Name'] == "Cote d'Ivoire", 'Country Name'] = "Côte d'Ivoire"
+table_melted_full.loc[table_melted_full['Country Name'] == 'Iran, Islamic Rep.', 'Country Name'] = 'Iran'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Syrian Arab Republic', 'Country Name'] = 'Syria'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Turkiye', 'Country Name'] = 'Turkey'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Viet Nam', 'Country Name'] = 'Vietnam'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Lao PDR', 'Country Name'] = 'Laos'
+table_melted_full.loc[table_melted_full['Country Name'] == "Korea, Dem. People's Rep.", 'Country Name'] = 'North Korea'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Korea, Rep.', 'Country Name'] = 'South Korea'
+table_melted_full.loc[table_melted_full['Country Name'] == 'Solomon Islands', 'Country Name'] = 'Solomon Is.'
+table_melted_full.loc[table_melted_full['Country Name'] == 'S. Sudan', 'Country Name'] = 'S. Sudan'
 #Missing Countries: S.Sudan and Côte d'Ivoire (present, but cannot add), Taiwan, Falkland Is., Antartica not in the table.
 
 
-merged_data = world_map.merge(table_melted2, left_on='name', right_on='Country Name', how='left')
+merged_data = world_map.merge(table_melted_full, left_on='name', right_on='Country Name', how='left')
 
 
 
 fig = px.choropleth(merged_data, 
                     geojson=merged_data.geometry, 
                     locations=merged_data.index, 
-                    color='Total % Forest Area Gained or Lost (1993-2021)',
+                    color='% Change in Forest Area (1993-2021)',
                     hover_name='name',
-                    hover_data=['Total % Forest Area Gained or Lost (1993-2021)'],
+                    hover_data=['% Change in Forest Area (1993-2021)'],
                     color_continuous_scale='Blackbody', #Inferno, Hot or Blackbody
                     projection='natural earth')
 
