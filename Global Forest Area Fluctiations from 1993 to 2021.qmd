@@ -36,7 +36,7 @@ import plotly.express as px
 
 
 create_table_total_total_total_total_total_total_query = """
-DROP TABLE ForestDB;P
+DROP TABLE ForestDB;
 """
 
 ```
@@ -566,8 +566,8 @@ fig2.show()
 ```
 
 
-The most Forest Area lost by a country from 1993 to 2021 is 24%, while the most gained by a country is 18%. This observation 
 
+The most Forest Area lost by a country from 1993 to 2021 is 24%, while the most gained by a country is 18%. Seeying these numbers, I'm interested to see how the total amount of global forest area has changed over the same amount of time.
 
 
 ## Query 3. Per year, is there a loss, neutrality, or increase in forest area globally?
@@ -737,10 +737,11 @@ SELECT
     y2021,
     (y2021 - y1993) AS '% Change in Forest Area (1993-2021)'
 FROM ForestDB
-WHERE Indicator_Name ='Forest area (% of land area)'
+WHERE Indicator_Name ='Forest area (% of land area)' AND (y2021 - y1993) IS NOT NULL
 ORDER BY (y2021 - y1993) DESC;
 """
 FullTable = connection.execute(query3).df()
+FullTable
 ```
 
 
@@ -835,23 +836,6 @@ fig.show()
 
 
 
-
-```{python}
-
-```
-
-```{python}
-
-```
-
-```{python}
-
-```
-
-
-```{python}
-
-```
 
 ```{python}
 
